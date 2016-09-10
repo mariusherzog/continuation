@@ -35,8 +35,7 @@ class bind : public continuation<R, A>
             anteced {anteced}
         {
             anteced.andThen([&](A a) -> R {
-                argument = a;
-                std::function<R(A)> handler_wrapper = [=](A) mutable { handler(argument); };
+                std::function<R(A)> handler_wrapper = [=](A) { handler(a); };
                 next.andThen(handler_wrapper);
                 next.run();
             });
@@ -49,7 +48,6 @@ class bind : public continuation<R, A>
 
     private:
         C& anteced;
-        A argument;
 };
 
 
