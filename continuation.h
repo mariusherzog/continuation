@@ -12,9 +12,7 @@ class continuation
             this->handler = handler;
         }
 
-        virtual void run()
-        {
-        }
+        virtual void run() = 0;
 
     protected:
         virtual R finished(A arg)
@@ -55,7 +53,7 @@ template <typename C, typename R, typename A>
 class bind : public continuation<R, A>
 {
     public:
-        bind(C& anteced, continuation<R, A>& next, std::function<R(A)> handler):
+        bind(C& anteced, continuation<R, A>& next):
             anteced {anteced}
         {
             anteced.andThen([&](A a) -> R {
@@ -65,6 +63,11 @@ class bind : public continuation<R, A>
             });
         }
 
+        void andThen(std::function<R(A)> handler)
+        {
+            this->handler = handler;
+        }
+
         void run()
         {
             anteced.run();
@@ -72,7 +75,14 @@ class bind : public continuation<R, A>
 
     private:
         C& anteced;
+        std::function<R(A)> handler;
 };
+
+template <typename R, typename A>
+bind<continuation<R,A>, R, A> operator>>=(continuation<R, A>& lhs, continuation<R, A>& rhs)
+{
+    return bind<continuation<R,A>,R,A>(lhs, rhs);
+}
 
 
 #endif // CONTINUATION

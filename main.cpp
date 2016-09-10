@@ -81,8 +81,15 @@ int main()
     //t.andThen([](std::string value) {std::cout << value << std::flush; });
     //t.run();
     timed_continuator t2(print2);
-    bind<timed_continuator, void, std::string> b(t, t2, [](std::string s) {std::cout << s << std::flush;});
-    b.run();
+    /*bind<timed_continuator, void, std::string> b(t, t2);
+    b.andThen([](std::string s) {std::cout << s << std::flush;});
+    b.run();*/
+
+    std::cout << "\n";
+
+    auto x = (t >>= t2);
+    x.andThen([](std::string s) {std::cout << s << std::flush;});
+    x.run();
 
 
     std::cout << "This first" << std::flush;
