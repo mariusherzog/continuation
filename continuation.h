@@ -7,7 +7,7 @@ template <typename R, typename A>
 class continuation
 {
     public:
-        R andThen(std::function<R(A)> handler)
+        void andThen(std::function<R(A)> handler)
         {
             this->handler = handler;
         }
@@ -24,6 +24,30 @@ class continuation
 
     private:
         std::function<R(A)> handler;
+};
+
+template <typename R, typename A>
+class creturn
+{
+    public:
+        creturn(A value):
+            value {value}
+        {
+        }
+
+        void andThen(std::function<R(A)> handler)
+        {
+            this->handler = handler;
+        }
+
+        void run() override
+        {
+            finished(value);
+        }
+
+    private:
+        std::function<R(A)> handler;
+        A value;
 };
 
 
