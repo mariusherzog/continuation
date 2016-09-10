@@ -6,8 +6,8 @@
 #include "continuation.h"
 
 
-struct timed_execution {
-    //typedef void (*func_type)(void);
+struct timed_execution
+{
     using func_type = std::function<void(void)>;
     timed_execution(func_type func, const std::chrono::milliseconds period)
         : func_(func)
@@ -17,15 +17,14 @@ struct timed_execution {
 
     void run()
     {
-        thread_ = std::thread(std::bind(&timed_execution::threadFunc,this));
+        thread_ = std::thread(std::bind(&timed_execution::thread_func,this));
     }
 
 private:
-    void threadFunc() {
-        //while(true) {
-            std::this_thread::sleep_for(period_);
-            func_();
-        //}
+    void thread_func()
+    {
+        std::this_thread::sleep_for(period_);
+        func_();
     }
     func_type func_;
     const std::chrono::milliseconds period_;
@@ -74,9 +73,6 @@ class timed_continuator : public continuation<void, std::string>
 
 int main()
 {
-//    timed_execution t(print,std::chrono::milliseconds(2000));
-//    t.run();
-
     timed_continuator t(print);
     //t.andThen([](std::string value) {std::cout << value << std::flush; });
     //t.run();
@@ -88,7 +84,7 @@ int main()
     std::cout << "\n";
 
     auto x = (t >>= t2);
-    x.andThen([](std::string s) {std::cout << s << std::flush;});
+    x.and_then([](std::string s) {std::cout << s << std::flush;});
     x.run();
 
 

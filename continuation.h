@@ -7,7 +7,7 @@ template <typename R, typename A>
 class continuation
 {
     public:
-        void andThen(std::function<R(A)> handler)
+        void and_then(std::function<R(A)> handler)
         {
             this->handler = handler;
         }
@@ -25,7 +25,7 @@ class continuation
 };
 
 template <typename R, typename A>
-class creturn
+class creturn : public continuation<R, A>
 {
     public:
         creturn(A value):
@@ -33,7 +33,7 @@ class creturn
         {
         }
 
-        void andThen(std::function<R(A)> handler)
+        void and_then(std::function<R(A)> handler)
         {
             this->handler = handler;
         }
@@ -56,14 +56,14 @@ class bind : public continuation<R, A>
         bind(C& anteced, continuation<R, A>& next):
             anteced {anteced}
         {
-            anteced.andThen([&](A a) -> R {
+            anteced.and_then([&](A a) -> R {
                 std::function<R(A)> handler_wrapper = [=](A) { handler(a); };
-                next.andThen(handler_wrapper);
+                next.and_then(handler_wrapper);
                 next.run();
             });
         }
 
-        void andThen(std::function<R(A)> handler)
+        void and_then(std::function<R(A)> handler)
         {
             this->handler = handler;
         }
