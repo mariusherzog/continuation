@@ -37,6 +37,11 @@ void print()
     std::cout << "Then this" << std::flush;
 }
 
+void print2()
+{
+    std::cout << "Then this2" << std::flush;
+}
+
 
 class timed_continuator : public continuation<void, std::string>
 {
@@ -47,7 +52,7 @@ class timed_continuator : public continuation<void, std::string>
         {
         }
 
-        void run()
+        void run() override
         {
             t.run();
         }
@@ -73,8 +78,11 @@ int main()
 //    t.run();
 
     timed_continuator t(print);
-    t.andThen([](std::string value) {std::cout << value << std::flush; });
-    t.run();
+    //t.andThen([](std::string value) {std::cout << value << std::flush; });
+    //t.run();
+    timed_continuator t2(print2);
+    bind<timed_continuator, void, std::string> b(t, t2, [](std::string s) {std::cout << s << std::flush;});
+    b.run();
 
 
     std::cout << "This first" << std::flush;
