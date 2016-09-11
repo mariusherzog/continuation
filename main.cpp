@@ -84,8 +84,8 @@ int main()
 
     std::cout << "\n";
 
-    auto q = (t >>= &t2);
-    auto x = (q >>= &t3);
+    auto q = (t >>= std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print2)));
+    auto x = (q >>= std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print)));
     x.and_then([](std::string s) {std::cout << s << std::flush;});
     //x.run();
     t.run();

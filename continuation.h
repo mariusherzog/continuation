@@ -38,7 +38,7 @@ class creturn : public continuation<R, A>
             this->handler = handler;
         }
 
-        void run()
+        void run() override
         {
             finished(value);
         }
@@ -53,10 +53,11 @@ template <typename C, typename R, typename A>
 class bind : public continuation<R, A>
 {
     public:
-        bind(C& anteced, continuation<R, A>* next):
-            anteced {anteced}
+        bind(C& anteced, std::unique_ptr<continuation<R, A>> n):
+            anteced {anteced},
+            next {n.release()}
         {
-            anteced.and_then([=](A a) -> R {
+            anteced.and_then([this](A a) -> R {
                 std::function<R(A)> handler_wrapper = [=](A) { handler(a); };
                 next->and_then(handler_wrapper);
                 next->run();
@@ -75,13 +76,14 @@ class bind : public continuation<R, A>
 
     private:
         C& anteced;
+        std::shared_ptr<continuation<R, A>> next;
         std::function<R(A)> handler;
 };
 
 template <typename C, typename R, typename A>
-bind<C, R, A> operator>>=(C& lhs, continuation<R, A>* rhs)
+bind<C, R, A> operator>>=(C& lhs, std::unique_ptr<continuation<R, A>> rhs)
 {
-    return bind<C,R,A>(lhs, rhs);
+    return bind<C,R,A>(lhs, std::move(rhs));
 }
 
 
