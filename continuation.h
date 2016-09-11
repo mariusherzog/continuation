@@ -38,7 +38,7 @@ class creturn : public continuation<R, A>
             this->handler = handler;
         }
 
-        void run() override
+        void run()
         {
             finished(value);
         }
@@ -68,9 +68,9 @@ class bind : public continuation<R, A>
             this->handler = handler;
         }
 
-        void run()
+        void run() override
         {
-            anteced.run();
+            //anteced.run();
         }
 
     private:
@@ -78,10 +78,10 @@ class bind : public continuation<R, A>
         std::function<R(A)> handler;
 };
 
-template <typename R, typename A>
-bind<continuation<R,A>, R, A> operator>>=(continuation<R, A>& lhs, continuation<R, A>& rhs)
+template <typename C, typename R, typename A>
+bind<C, R, A> operator>>=(C& lhs, continuation<R, A>& rhs)
 {
-    return bind<continuation<R,A>,R,A>(lhs, rhs);
+    return bind<C,R,A>(lhs, rhs);
 }
 
 

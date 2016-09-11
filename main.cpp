@@ -77,15 +77,18 @@ int main()
     //t.andThen([](std::string value) {std::cout << value << std::flush; });
     //t.run();
     timed_continuator t2(print2);
+    timed_continuator t3(print);
     /*bind<timed_continuator, void, std::string> b(t, t2);
     b.andThen([](std::string s) {std::cout << s << std::flush;});
     b.run();*/
 
     std::cout << "\n";
 
-    auto x = (t >>= t2);
+    auto q = (t >>= t2);
+    auto x = (q >>= t3);
     x.and_then([](std::string s) {std::cout << s << std::flush;});
-    x.run();
+    //x.run();
+    t.run();
 
 
     std::cout << "This first" << std::flush;
