@@ -53,13 +53,13 @@ template <typename C, typename R, typename A>
 class bind : public continuation<R, A>
 {
     public:
-        bind(C& anteced, continuation<R, A>& next):
+        bind(C& anteced, continuation<R, A>* next):
             anteced {anteced}
         {
-            anteced.and_then([&](A a) -> R {
+            anteced.and_then([=](A a) -> R {
                 std::function<R(A)> handler_wrapper = [=](A) { handler(a); };
-                next.and_then(handler_wrapper);
-                next.run();
+                next->and_then(handler_wrapper);
+                next->run();
             });
         }
 
@@ -79,7 +79,7 @@ class bind : public continuation<R, A>
 };
 
 template <typename C, typename R, typename A>
-bind<C, R, A> operator>>=(C& lhs, continuation<R, A>& rhs)
+bind<C, R, A> operator>>=(C& lhs, continuation<R, A>* rhs)
 {
     return bind<C,R,A>(lhs, rhs);
 }

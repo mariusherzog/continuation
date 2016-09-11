@@ -84,8 +84,8 @@ int main()
 
     std::cout << "\n";
 
-    auto q = (t >>= t2);
-    auto x = (q >>= t3);
+    auto q = (t >>= &t2);
+    auto x = (q >>= &t3);
     x.and_then([](std::string s) {std::cout << s << std::flush;});
     //x.run();
     t.run();
