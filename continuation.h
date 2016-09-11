@@ -53,12 +53,15 @@ template <typename C, typename R, typename A>
 class bind : public continuation<R, A>
 {
     public:
-        bind(C& anteced, std::unique_ptr<continuation<R, A>> n):
+        bind(C& anteced, std::function<std::unique_ptr<continuation<R, A>>(A)> n):
             anteced {anteced},
-            next {n.release()}
+            next {nullptr}
         {
-            anteced.and_then([this](A a) -> R {
-                std::function<R(A)> handler_wrapper = [=](A) { handler(a); };
+            anteced.and_then([=](A a) -> R {
+                continuation<R, A>* ptr = n(a).release();
+                //std::shared_ptr<continuation<R, A>> next {ptr};
+                next = std::shared_ptr<continuation<R, A>> {ptr};
+                std::function<R(A)> handler_wrapper = [=](A a1) { handler(a1); };
                 next->and_then(handler_wrapper);
                 next->run();
             });
@@ -81,9 +84,9 @@ class bind : public continuation<R, A>
 };
 
 template <typename C, typename R, typename A>
-bind<C, R, A> operator>>=(C& lhs, std::unique_ptr<continuation<R, A>> rhs)
+bind<C, R, A> operator>>=(C& lhs, std::function<std::unique_ptr<continuation<R, A>>(A)> rhs)
 {
-    return bind<C,R,A>(lhs, std::move(rhs));
+    return bind<C,R,A>(lhs, rhs);
 }
 
 

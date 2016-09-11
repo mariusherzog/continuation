@@ -45,10 +45,12 @@ void print2()
 class timed_continuator : public continuation<void, std::string>
 {
     public:
-        timed_continuator(void (*fun)(void)):
+        timed_continuator(void (*fun)(void), std::string n = "q"):
             t {std::bind(&timed_continuator::handler, this), std::chrono::milliseconds(2000)},
+            n {n},
             func {fun}
         {
+
         }
 
         void run() override
@@ -59,13 +61,14 @@ class timed_continuator : public continuation<void, std::string>
 
     private:
         timed_execution t;
+        std::string n;
 
         void (*func)(void);
 
         void handler()
         {
             func();
-            finished("test");
+            finished(n);
         }
 };
 
@@ -76,16 +79,18 @@ int main()
     timed_continuator t(print);
     //t.andThen([](std::string value) {std::cout << value << std::flush; });
     //t.run();
-    timed_continuator t2(print2);
-    timed_continuator t3(print);
+    //timed_continuator t2(print2);
+    //timed_continuator t3(print);
     /*bind<timed_continuator, void, std::string> b(t, t2);
     b.andThen([](std::string s) {std::cout << s << std::flush;});
     b.run();*/
 
     std::cout << "\n";
 
-    auto q = (t >>= std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print2)));
-    auto x = (q >>= std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print)));
+    std::function<std::unique_ptr<continuation<void, std::string>>(std::string)> f = [](std::string q) { return std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print2, "q"+q));};
+    std::function<std::unique_ptr<continuation<void, std::string>>(std::string)> f2 = [](std::string q) { return std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print, "q"+q));};
+    auto q = (t >>= f);
+    auto x = (q >>= f2);
     x.and_then([](std::string s) {std::cout << s << std::flush;});
     //x.run();
     t.run();
