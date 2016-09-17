@@ -5,7 +5,7 @@ CONFIG -= qt
 
 SOURCES += main.cpp
 
-QMAKE_CXXFLAGS += -pthread -std=c++11
+QMAKE_CXXFLAGS += -pthread -std=c++14
 
 
 LIBS += -lpthread

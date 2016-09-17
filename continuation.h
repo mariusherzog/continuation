@@ -3,6 +3,8 @@
 
 #include <functional>
 #include <memory>
+#include <tuple>
+#include <utility>
 
 template <typename R, typename... A>
 class continuation
@@ -25,13 +27,13 @@ class continuation
         std::function<R(A...)> handler;
 };
 
-/*
+
 template <typename R, typename... A>
 class creturn : public continuation<R, A...>
 {
     public:
         creturn(A&&... values):
-            value {std::forward<A>(values)...}
+            values {std::forward<A>(values)...}
         {
         }
 
@@ -42,13 +44,21 @@ class creturn : public continuation<R, A...>
 
         void run() override
         {
-            finished(std::forward<A>(value)...);
+            constexpr auto size = std::tuple_size<typename std::decay<decltype(values)>::type>::value;
+            auto seq = std::make_index_sequence<size>{};
+            invoke_helper(seq);
         }
 
     private:
+        template <std::size_t... I>
+        void invoke_helper(std::index_sequence<I...>)
+        {
+            this->finished(std::get<I>(std::forward<decltype(values)>(values))...);
+        }
+
         std::function<R(A...)> handler;
-        A... value;
-};*/
+        std::tuple<A...> values;
+};
 
 
 template <typename C, typename R, typename... A>

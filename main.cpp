@@ -42,7 +42,7 @@ void print2()
 }
 
 
-class timed_continuator : public continuation<void, std::string>
+class timed_continuator : public continuation<void, std::string, int>
 {
     public:
         timed_continuator(void (*fun)(void), std::string n = "q"):
@@ -68,16 +68,16 @@ class timed_continuator : public continuation<void, std::string>
         void handler()
         {
             func();
-            finished(std::string {n});
+            finished(std::string {n}, 2);
         }
 };
 
 
-
 int main()
 {
+
+
     timed_continuator t(print);
-    std::unique_ptr<continuation<void, std::string>> m = std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print));
     //t.andThen([](std::string value) {std::cout << value << std::flush; });
     //t.run();
     //timed_continuator t2(print2);
@@ -88,15 +88,16 @@ int main()
 
     std::cout << "\n";
 
-    std::function<std::unique_ptr<continuation<void, std::string>>(std::string)> f = [](std::string q) { return std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print2, "q"+q));};
-    std::function<std::unique_ptr<continuation<void, std::string>>(std::string)> f2 = [](std::string q) { return std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print, "q"+q));};
-    std::function<std::unique_ptr<continuation<void, std::string>>(std::string)> f3 = [](std::string q) { return std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print2, "q"+q));};
+    std::function<std::unique_ptr<continuation<void, std::string, int>>(std::string, int)> f = [](std::string q, int) { return std::unique_ptr<continuation<void, std::string, int>>(new timed_continuator(print2, "q"+q));};
+    std::function<std::unique_ptr<continuation<void, std::string, int>>(std::string, int)> f2 = [](std::string q, int) { return std::unique_ptr<continuation<void, std::string, int>>(new timed_continuator(print, "q"+q));};
+    std::function<std::unique_ptr<continuation<void, std::string, int>>(std::string, int)> f3 = [](std::string q, int) { return std::unique_ptr<continuation<void, std::string, int>>(new timed_continuator(print2, "q"+q));};
+    std::function<std::unique_ptr<continuation<void, std::string, int>>(std::string, int)> cr = [](std::string q, int x) { return std::unique_ptr<continuation<void, std::string, int>>(new creturn<void, std::string, int>("s"+q, 3));};
 
     //auto q = (t | f) | f2;
     //auto x = (q | f2);
     //auto y = (q | f3);
-    auto y = (t | f) | f2 | f3;
-    y->and_then([](std::string s) {std::cout << s << std::flush;});
+    auto y = t | f | f2 | f3 | cr;
+    y->and_then([](std::string s, int) {std::cout << s << std::flush;});
     //x.run();
     y->run();
 
