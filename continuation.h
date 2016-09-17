@@ -5,27 +5,69 @@
 #include <memory>
 #include <tuple>
 #include <utility>
+#include <future>
+
+
+template<typename T>
+auto fold(std::future<std::future<T>>&& f)
+-> std::future<T>
+{
+    return std::async(std::launch::deferred, [](std::future<std::future<T>>&& f)
+    {
+        return f.get().get();
+    }, std::move(f));
+}
+
+
+template<typename T>
+auto fold(std::future<T>&& f)
+-> std::future<T>
+{
+    return std::move(f);
+}
+
+/*
+auto fold(int&& f)
+-> std::future<int>
+{
+    return std::async(std::launch::deferred, [](int&& f)
+    {
+        return std::move(f);
+    }, std::move(f));
+}*/
 
 template <typename R, typename... A>
 class continuation
 {
     public:
-        continuation<R, A...>& and_then(std::function<R(A...)> handler)
+        continuation<R, A...>& and_then(std::function<std::future<R>(A...)> handler)
         {
             this->handler = handler;
             return *this;
         }
 
-        virtual void run() = 0;
+        continuation<R, A...>& and_then(std::function<R(A...)> handler)
+        {
+            auto future_wrapper = [handler](A... args) { return std::async(std::launch::async, handler, std::forward<A>(args)...); };
+            this->handler = future_wrapper;
+            return *this;
+        }
+
+        std::future<R> run()
+        {
+            return fold(std::async(std::launch::async, [this]() { return this->run_impl(); }));
+        }
+
+        virtual std::future<R> run_impl() = 0;
 
     protected:
-        void invoke_handler(A&&... args)
+        std::future<R> invoke_handler(A&&... args)
         {
             return handler(std::forward<A>(args)...);
         }
 
     private:
-        std::function<R(A...)> handler;
+        std::function<std::future<R>(A...)> handler;
 };
 
 
@@ -38,18 +80,18 @@ class creturn : public continuation<R, A...>
         {
         }
 
-        void run() override
+        std::future<R> run_impl() override
         {
             constexpr auto size = std::tuple_size<typename std::decay<decltype(values)>::type>::value;
             auto seq = std::make_index_sequence<size>{};
-            invoke_helper(seq);
+            return invoke_helper(seq);
         }
 
     private:
         template <std::size_t... I>
-        void invoke_helper(std::index_sequence<I...>)
+        std::future<R> invoke_helper(std::index_sequence<I...>)
         {
-            this->invoke_handler(std::get<I>(std::forward<decltype(values)>(values))...);
+            return this->invoke_handler(std::get<I>(std::forward<decltype(values)>(values))...);
         }
 
         std::function<R(A...)> handler;
@@ -66,12 +108,12 @@ class bind : public continuation<R, A...>
             anteced_ref {nullptr},
             next {nullptr}
         {
-            this->anteced->and_then([=](A&&... a) -> R {
+            this->anteced->and_then([=](A&&... a) {
                 continuation<R, A...>* ptr = n(std::forward<A>(a)...).release();
                 next = std::shared_ptr<continuation<R, A...>> {ptr};
-                std::function<R(A...)> handler_wrapper = [=](A... a1) { this->invoke_handler(std::forward<A>(a1)...); };
+                std::function<std::future<R>(A...)> handler_wrapper = [=](A... a1) { return fold(this->invoke_handler(std::forward<A>(a1)...)); };
                 next->and_then(handler_wrapper);
-                next->run();
+                return next->run();
             });
         }
 
@@ -80,21 +122,21 @@ class bind : public continuation<R, A...>
             anteced_ref {&anteced_ref},
             next(nullptr)
         {
-            anteced_ref.and_then([=](A&&... a) -> R {
+            anteced_ref.and_then([=](A&&... a) {
                 continuation<R, A...>* ptr = n(std::forward<A>(a)...).release();
                 next = std::shared_ptr<continuation<R, A...>> {ptr};
-                std::function<R(A...)> handler_wrapper = [=](A... a1) { this->invoke_handler(std::forward<A>(a1)...); };
+                std::function<std::future<R>(A...)> handler_wrapper = [=](A... a1) { return fold(this->invoke_handler(std::forward<A>(a1)...)); };
                 next->and_then(handler_wrapper);
-                next->run();
+                return next->run();
             });
         }
 
-        void run() override
+        std::future<R> run_impl() override
         {
             if (anteced_ref) {
-                anteced_ref->run();
+                return anteced_ref->run();
             } else {
-                anteced->run();
+                return anteced->run();
             }
         }
 
