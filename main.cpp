@@ -47,7 +47,6 @@ class timed_continuator : public continuation<int, std::string, int>
 {
     public:
         timed_continuator(void (*fun)(void), std::string n = "q"):
-            t {std::bind(&timed_continuator::handler, this), std::chrono::milliseconds(2000)},
             n {n},
             func {fun}
         {
@@ -56,27 +55,18 @@ class timed_continuator : public continuation<int, std::string, int>
 
         std::future<int> run_impl() override
         {
-            t.run();
-            return std::async(std::launch::deferred, [](){return 20;});
-        }
-
-        std::future<int>& getf()
-        {
-            return result;
+            //t.run();
+            func();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1750));
+            auto val =  invoke_handler(std::string {n}, 13);
+            return std::async(std::launch::deferred, [](std::future<int>&& f){ return f.get()+101;}, std::move(val));
+            //return std::async(std::launch::deferred, [](){return 20;});
         }
 
     private:
-        timed_execution t;
         std::string n;
 
         void (*func)(void);
-
-        std::future<int> result;
-        void handler()
-        {
-            func();
-            result = invoke_handler(std::string {n}, 20);
-        }
 };
 
 
@@ -85,13 +75,6 @@ int main()
 
 
     timed_continuator t(print);
-    //t.andThen([](std::string value) {std::cout << value << std::flush; });
-    //t.run();
-    //timed_continuator t2(print2);
-    //timed_continuator t3(print);
-    /*bind<timed_continuator, void, std::string> b(t, t2);
-    b.andThen([](std::string s) {std::cout << s << std::flush;});
-    b.run();*/
 
     std::cout << "\n";
 
@@ -100,22 +83,18 @@ int main()
     std::function<std::unique_ptr<continuation<int, std::string, int>>(std::string, int)> f3 = [](std::string q, int) { return std::unique_ptr<continuation<int, std::string, int>>(new timed_continuator(print2, "q"+q));};
     std::function<std::unique_ptr<continuation<int, std::string, int>>(std::string, int)> cr = [](std::string q, int) { return std::unique_ptr<continuation<int, std::string, int>>(new creturn<int, std::string, int>("c"+q, 3));};
 
-    //auto q = (t | f) | f2;
-    //auto x = (q | f2);
-    //auto y = (q | f3);
+
     auto y = t | cr | cr | f | f2 | f3;
-    //auto y = t | f3 | cr;
     y->and_then([](std::string s, int) {
         std::cout << s << std::flush; return 97; });
-    //x.run();
-    y->run();
+    auto fut = y->run();
 
 
     std::cout << "This first" << std::flush;
 
     std::this_thread::sleep_for(std::chrono::seconds(30));
 
-    std::cout << t.getf().get();
+    std::cout << "\n" << fut.get();
 
     return 0;
 }
