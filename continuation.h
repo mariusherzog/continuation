@@ -10,15 +10,16 @@ template <typename R, typename... A>
 class continuation
 {
     public:
-        void and_then(std::function<R(A...)> handler)
+        continuation<R, A...>& and_then(std::function<R(A...)> handler)
         {
             this->handler = handler;
+            return *this;
         }
 
         virtual void run() = 0;
 
     protected:
-        virtual R finished(A&&... args)
+        void invoke_handler(A&&... args)
         {
             return handler(std::forward<A>(args)...);
         }
@@ -37,11 +38,6 @@ class creturn : public continuation<R, A...>
         {
         }
 
-        void and_then(std::function<R(A...)> handler)
-        {
-            this->handler = handler;
-        }
-
         void run() override
         {
             constexpr auto size = std::tuple_size<typename std::decay<decltype(values)>::type>::value;
@@ -53,7 +49,7 @@ class creturn : public continuation<R, A...>
         template <std::size_t... I>
         void invoke_helper(std::index_sequence<I...>)
         {
-            this->finished(std::get<I>(std::forward<decltype(values)>(values))...);
+            this->invoke_handler(std::get<I>(std::forward<decltype(values)>(values))...);
         }
 
         std::function<R(A...)> handler;
@@ -72,9 +68,8 @@ class bind : public continuation<R, A...>
         {
             this->anteced->and_then([=](A&&... a) -> R {
                 continuation<R, A...>* ptr = n(std::forward<A>(a)...).release();
-                //std::shared_ptr<continuation<R, A>> next {ptr};
                 next = std::shared_ptr<continuation<R, A...>> {ptr};
-                std::function<R(A...)> handler_wrapper = [=](A... a1) { handler(std::forward<A>(a1)...); };
+                std::function<R(A...)> handler_wrapper = [=](A... a1) { this->invoke_handler(std::forward<A>(a1)...); };
                 next->and_then(handler_wrapper);
                 next->run();
             });
@@ -87,17 +82,11 @@ class bind : public continuation<R, A...>
         {
             anteced_ref.and_then([=](A&&... a) -> R {
                 continuation<R, A...>* ptr = n(std::forward<A>(a)...).release();
-                //std::shared_ptr<continuation<R, A>> next {ptr};
                 next = std::shared_ptr<continuation<R, A...>> {ptr};
-                std::function<R(A...)> handler_wrapper = [=](A... a1) { handler(std::forward<A>(a1)...); };
+                std::function<R(A...)> handler_wrapper = [=](A... a1) { this->invoke_handler(std::forward<A>(a1)...); };
                 next->and_then(handler_wrapper);
                 next->run();
             });
-        }
-
-        void and_then(std::function<R(A...)> handler)
-        {
-            this->handler = handler;
         }
 
         void run() override
@@ -113,7 +102,6 @@ class bind : public continuation<R, A...>
         std::unique_ptr<C> anteced;
         C* anteced_ref;
         std::shared_ptr<continuation<R, A...>> next;
-        std::function<R(A...)> handler;
 };
 
 
