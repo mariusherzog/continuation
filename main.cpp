@@ -68,7 +68,7 @@ class timed_continuator : public continuation<void, std::string>
         void handler()
         {
             func();
-            finished(n);
+            finished(std::string {n});
         }
 };
 
