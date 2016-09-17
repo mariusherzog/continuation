@@ -74,7 +74,7 @@ class bind : public continuation<R, A>
 
         void run() override
         {
-            //anteced.run();
+            anteced.run();
         }
 
     private:

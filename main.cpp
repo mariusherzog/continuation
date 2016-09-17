@@ -89,11 +89,14 @@ int main()
 
     std::function<std::unique_ptr<continuation<void, std::string>>(std::string)> f = [](std::string q) { return std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print2, "q"+q));};
     std::function<std::unique_ptr<continuation<void, std::string>>(std::string)> f2 = [](std::string q) { return std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print, "q"+q));};
+    std::function<std::unique_ptr<continuation<void, std::string>>(std::string)> f3 = [](std::string q) { return std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print2, "q"+q));};
+
     auto q = (t >>= f);
     auto x = (q >>= f2);
-    x.and_then([](std::string s) {std::cout << s << std::flush;});
+    auto y = (x >>= f3);
+    y.and_then([](std::string s) {std::cout << s << std::flush;});
     //x.run();
-    t.run();
+    y.run();
 
 
     std::cout << "This first" << std::flush;
