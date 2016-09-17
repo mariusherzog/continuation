@@ -95,7 +95,7 @@ int main()
     //auto q = (t | f) | f2;
     //auto x = (q | f2);
     //auto y = (q | f3);
-    auto y = (std::move(m) | f) | f2 | f3;
+    auto y = (t | f) | f2 | f3;
     y->and_then([](std::string s) {std::cout << s << std::flush;});
     //x.run();
     y->run();
