@@ -2,6 +2,7 @@
 #define CONTINUATION
 
 #include <functional>
+#include <memory>
 
 template <typename R, typename A>
 class continuation
@@ -53,11 +54,11 @@ template <typename C, typename R, typename A>
 class bind : public continuation<R, A>
 {
     public:
-        bind(C& anteced, std::function<std::unique_ptr<continuation<R, A>>(A)> n):
-            anteced {anteced},
+        bind(std::unique_ptr<C> anteced, std::function<std::unique_ptr<continuation<R, A>>(A)> n):
+            anteced {std::move(anteced)},
             next {nullptr}
         {
-            anteced.and_then([=](A a) -> R {
+            this->anteced->and_then([=](A a) -> R {
                 continuation<R, A>* ptr = n(a).release();
                 //std::shared_ptr<continuation<R, A>> next {ptr};
                 next = std::shared_ptr<continuation<R, A>> {ptr};
@@ -74,19 +75,26 @@ class bind : public continuation<R, A>
 
         void run() override
         {
-            anteced.run();
+            anteced->run();
         }
 
     private:
-        C& anteced;
+        std::unique_ptr<C> anteced;
         std::shared_ptr<continuation<R, A>> next;
         std::function<R(A)> handler;
 };
 
+/*
 template <typename C, typename R, typename A>
-bind<C, R, A> operator>>=(C& lhs, std::function<std::unique_ptr<continuation<R, A>>(A)> rhs)
+std::unique_ptr<bind<C, R, A>> operator|(std::unique_ptr<C> lhs, std::function<std::unique_ptr<continuation<R, A>>(A)> rhs)
 {
-    return bind<C,R,A>(lhs, rhs);
+    return std::unique_ptr<bind<C, R, A>> {new bind<C,R,A>(lhs, rhs)};
+}*/
+
+template <typename C, typename R, typename A>
+std::unique_ptr<bind<C, R, A>> operator|(std::unique_ptr<C> lhs, std::function<std::unique_ptr<continuation<R, A>>(A)> rhs)
+{
+    return std::unique_ptr<bind<C, R, A>> {new bind<C,R,A>(std::move(lhs), rhs)};
 }
 
 

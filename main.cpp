@@ -77,6 +77,7 @@ class timed_continuator : public continuation<void, std::string>
 int main()
 {
     timed_continuator t(print);
+    std::unique_ptr<continuation<void, std::string>> m = std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print));
     //t.andThen([](std::string value) {std::cout << value << std::flush; });
     //t.run();
     //timed_continuator t2(print2);
@@ -91,12 +92,13 @@ int main()
     std::function<std::unique_ptr<continuation<void, std::string>>(std::string)> f2 = [](std::string q) { return std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print, "q"+q));};
     std::function<std::unique_ptr<continuation<void, std::string>>(std::string)> f3 = [](std::string q) { return std::unique_ptr<continuation<void, std::string>>(new timed_continuator(print2, "q"+q));};
 
-    auto q = (t >>= f);
-    auto x = (q >>= f2);
-    auto y = (x >>= f3);
-    y.and_then([](std::string s) {std::cout << s << std::flush;});
+    //auto q = (t | f) | f2;
+    //auto x = (q | f2);
+    //auto y = (q | f3);
+    auto y = (std::move(m) | f) | f2 | f3;
+    y->and_then([](std::string s) {std::cout << s << std::flush;});
     //x.run();
-    y.run();
+    y->run();
 
 
     std::cout << "This first" << std::flush;
