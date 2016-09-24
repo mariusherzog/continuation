@@ -98,6 +98,34 @@ class creturn : public continuation<R, A...>
         std::tuple<A...> values;
 };
 
+template <typename R, typename... A>
+class loop : public continuation<R, A...>
+{
+    public:
+        loop(std::unique_ptr<continuation<R, A...>> body, std::function<bool(A...)> predicate):
+            body {std::move(body)},
+            predicate {predicate}
+        {
+
+        }
+
+        std::future<R> run_impl(A... args) override
+        {
+            body->and_then([=](A... pargs) {
+                if (predicate(pargs...))
+                    return body->run(pargs...);
+                else
+                    return this->invoke_handler(pargs...);
+                // else invoke_handler
+            });
+            return body->run(args...);
+        }
+
+    private:
+        std::unique_ptr<continuation<R, A...>> body;
+        std::function<bool(A...)> predicate;
+};
+
 
 template <typename C, typename R, typename... A>
 class bind : public continuation<R, A...>
@@ -108,12 +136,13 @@ class bind : public continuation<R, A...>
             anteced_ref {nullptr},
             next {nullptr}
         {
+            next = std::shared_ptr<continuation<R, A...>> {n.release()};
             this->anteced->and_then([=](A... a) {
                 //continuation<R, A...>* ptr = n(std::forward<A>(a)...).release();
                 //next = std::shared_ptr<continuation<R, A...>> {ptr};
                 std::function<std::future<R>(A...)> handler_wrapper = [=](A... a1) { return fold(this->invoke_handler(a1...)); };
-                n->and_then(handler_wrapper);
-                return n->run(a...);
+                next->and_then(handler_wrapper);
+                return next->run(a...);
             });
         }
 

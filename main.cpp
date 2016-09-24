@@ -85,8 +85,12 @@ int main()
     */
 
     auto f = std::unique_ptr<continuation<int, std::string, int>>(new timed_continuator(print2, ""));
+    auto f2 = std::unique_ptr<continuation<int, std::string, int>>(new timed_continuator(print, ""));
 
-    auto y = t | std::move(f);
+    auto y = std::move(std::unique_ptr<continuation<int, std::string, int>>(new loop<int, std::string, int>(t | std::move(f), [](std::string s, int) {return s.length() < 3;})))
+                    | std::move(f2)
+                    | std::unique_ptr<continuation<int, std::string, int>> { new timed_continuator(print, "")}
+                    ;
     y->and_then([](std::string s, int) {
         std::cout << s << std::flush; return 97; });
     auto fut = y->run("", 0);
