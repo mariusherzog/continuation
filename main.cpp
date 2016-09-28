@@ -53,7 +53,7 @@ class timed_continuator : public continuation<int, std::string, int>
 
         }
 
-        std::future<int> run_impl(std::string s, int i) override
+        std::future<int> run_impl(std::string s, int) override
         {
             //t.run();
             func();
@@ -70,19 +70,12 @@ class timed_continuator : public continuation<int, std::string, int>
 };
 
 
+
 int main()
 {
-
-
     timed_continuator t(print);
 
     std::cout << "\n";
-
-    /*std::function<std::unique_ptr<continuation<int, std::string, int>>(std::string, int)> f = [](std::string q, int) { return std::unique_ptr<continuation<int, std::string, int>>(new timed_continuator(print2, "q"+q));};
-    std::function<std::unique_ptr<continuation<int, std::string, int>>(std::string, int)> f2 = [](std::string q, int) { return std::unique_ptr<continuation<int, std::string, int>>(new timed_continuator(print, "q"+q));};
-    std::function<std::unique_ptr<continuation<int, std::string, int>>(std::string, int)> f3 = [](std::string q, int) { return std::unique_ptr<continuation<int, std::string, int>>(new timed_continuator(print2, "q"+q));};
-    std::function<std::unique_ptr<continuation<int, std::string, int>>(std::string, int)> cr = [](std::string q, int) { return std::unique_ptr<continuation<int, std::string, int>>(new creturn<int, std::string, int>("c"+q, 3));};
-    */
 
     auto f = std::unique_ptr<continuation<int, std::string, int>>(new timed_continuator(print2, ""));
     auto f2 = std::unique_ptr<continuation<int, std::string, int>>(new timed_continuator(print, ""));

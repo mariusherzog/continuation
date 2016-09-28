@@ -26,16 +26,6 @@ auto fold(std::future<T>&& f)
     return std::move(f);
 }
 
-/*
-auto fold(int&& f)
--> std::future<int>
-{
-    return std::async(std::launch::deferred, [](int&& f)
-    {
-        return std::move(f);
-    }, std::move(f));
-}*/
-
 template <typename R, typename... A>
 class continuation
 {
@@ -178,16 +168,18 @@ class bind : public continuation<R, A...>
 
 
 template <typename C, typename R, typename... A>
-std::unique_ptr<bind<C, R, A...>> operator|(C& lhs, std::unique_ptr<continuation<R, A...>> rhs)
+std::unique_ptr<continuation<R, A...>> operator|(C& lhs, std::unique_ptr<continuation<R, A...>> rhs)
 {
     return std::unique_ptr<bind<C, R, A...>> {new bind<C,R,A...>(lhs, std::move(rhs))};
 }
 
 template <typename C, typename R, typename... A>
-std::unique_ptr<bind<C, R, A...>> operator|(std::unique_ptr<C> lhs, std::unique_ptr<continuation<R, A...>> rhs)
+std::unique_ptr<continuation<R, A...>> operator|(std::unique_ptr<C> lhs, std::unique_ptr<continuation<R, A...>> rhs)
 {
     return std::unique_ptr<bind<C, R, A...>> {new bind<C,R,A...>(std::move(lhs), std::move(rhs))};
 }
+
+
 
 
 #endif // CONTINUATION
