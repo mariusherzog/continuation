@@ -177,25 +177,13 @@ std::unique_ptr<continuation<R, A...>> operator|(C& lhs, std::unique_ptr<continu
 }
 
 template <typename C, typename R, typename... A>
-std::unique_ptr<bind<C, R, A...>> operator|(C& lhs, std::unique_ptr<loop<R, A...>> rhs)
-{
-    return std::unique_ptr<bind<C, R, A...>> {new bind<C,R,A...>(lhs, std::move(rhs))};
-}
-
-template <typename C, typename R, typename... A>
-std::unique_ptr<bind<C, R, A...>> operator|(std::unique_ptr<C> lhs, std::unique_ptr<continuation<R, A...>> rhs)
+std::unique_ptr<continuation<R, A...>> operator|(std::unique_ptr<C> lhs, std::unique_ptr<continuation<R, A...>> rhs)
 {
     return std::unique_ptr<bind<C, R, A...>> {new bind<C,R,A...>(std::move(lhs), std::move(rhs))};
 }
 
-template <typename C, typename R, typename... A>
-std::unique_ptr<bind<C, R, A...>> operator|(std::unique_ptr<C> lhs, std::unique_ptr<loop<R, A...>> rhs)
-{
-    return std::unique_ptr<bind<C, R, A...>> {new bind<C,R,A...>(std::move(lhs), std::move(rhs))};
-}
-
-template <typename C, typename R, typename... A>
-std::unique_ptr<loop<R, A...>> operator<<(std::unique_ptr<bind<C, R, A...>> cont, std::function<bool(A...)> predicate)
+template <typename R, typename... A>
+std::unique_ptr<continuation<R, A...>> operator<<(std::unique_ptr<continuation<R, A...>> cont, std::function<bool(A...)> predicate)
 {
     return std::unique_ptr<loop<R, A...>> {new loop<R, A...>(std::move(cont), predicate)};
 }
