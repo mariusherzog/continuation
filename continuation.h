@@ -171,7 +171,7 @@ class bind : public continuation<R, A...>
 
 
 template <typename C, typename R, typename... A>
-std::unique_ptr<bind<C, R, A...>> operator|(C& lhs, std::unique_ptr<continuation<R, A...>> rhs)
+std::unique_ptr<continuation<R, A...>> operator|(C& lhs, std::unique_ptr<continuation<R, A...>> rhs)
 {
     return std::unique_ptr<bind<C, R, A...>> {new bind<C,R,A...>(lhs, std::move(rhs))};
 }
@@ -199,6 +199,8 @@ std::unique_ptr<loop<R, A...>> operator<<(std::unique_ptr<bind<C, R, A...>> cont
 {
     return std::unique_ptr<loop<R, A...>> {new loop<R, A...>(std::move(cont), predicate)};
 }
+
+
 
 
 #endif // CONTINUATION
